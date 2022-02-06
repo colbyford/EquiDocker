@@ -16,3 +16,8 @@ docker run --gpus all --name equidock --rm -p 8888:8888 equidock
 # with CPU
 docker run  --name equidock --rm -p 8888:8888 equidock
 ```
+
+## Inference
+```sh
+inference_rigid.py
+```
