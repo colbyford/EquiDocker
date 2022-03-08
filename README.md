@@ -17,7 +17,9 @@ docker run --gpus all --name equidock --rm -p 8888:8888 equidock
 docker run  --name equidock --rm -p 8888:8888 equidock
 ```
 
-## Inference
+## Inferencing
+
+### Inference Whole Directory
 ```sh
 inference_rigid.py
 ```
