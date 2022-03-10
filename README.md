@@ -23,3 +23,4 @@ docker run  --name equidock --rm -p 8888:8888 equidock
 ```sh
 inference_rigid.py
 ```
+* _Will be updated for single protein pair docking..._
