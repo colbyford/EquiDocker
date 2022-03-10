@@ -1,4 +1,5 @@
 FROM jupyter/scipy-notebook:latest
+# FROM cschranz/gpu-jupyter
 
 LABEL org.opencontainers.image.authors="Tuple, LLC <contact@tuple.xyz>"
 
@@ -22,6 +23,14 @@ RUN apt-get update && \
 ## Install EquiDock Dependencies
 
 ### CUDA
+
+## Install PyTorch with dependencies
+RUN conda install --quiet --yes \
+    pyyaml mkl mkl-include setuptools cmake cffi typing && \
+    conda clean --all -f -y && \
+    fix-permissions $CONDA_DIR && \
+    fix-permissions /home/$NB_USER
+
 # RUN sudo apt-get update && \
 #     sudo apt-get install -y libassuan0 libnpth0 libksba8 \
 #                             dirmngr pinentry \
@@ -47,3 +56,5 @@ RUN pip install -r requirements.txt
 ## Download EquiDock
 RUN git clone https://github.com/octavian-ganea/equidock_public 
     #&& \ git checkout f0059041d8d3af88a9d120e9e5c36d3bedfb32a8
+
+RUN sudo chmod -R 777 ./equidock_public 
