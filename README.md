@@ -14,7 +14,7 @@ docker build -t equidock .
 # with GPUs
 docker run --gpus all --name equidock --rm -p 8888:8888 equidock
 # with CPU
-docker run  --name equidock --rm -p 8888:8888 equidock
+docker run -v T:\equidock_tests:/data --name equidock --rm -p 8888:8888 equidock
 ```
 
 ## Inferencing
@@ -22,5 +22,6 @@ docker run  --name equidock --rm -p 8888:8888 equidock
 ### Inference Whole Directory
 ```sh
 inference_rigid.py
+intference_pair.py
 ```
 * _Will be updated for single protein pair docking..._

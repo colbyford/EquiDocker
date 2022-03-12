@@ -6,7 +6,7 @@ torch==1.10.2
 # dgl==0.7a210527
 biopandas==0.2.8
 # ot==0.7.0
-# POT==0.4.0
+POT==0.4.0
 # rdkit==2021.09.4
 dgllife==0.2.8
 joblib==1.1.0

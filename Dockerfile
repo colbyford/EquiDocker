@@ -16,7 +16,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 USER root
 
 ## Install Basic Dependencies
-RUN apt-get update && \
+RUN apt-get clean && \
+    apt-get update && \
     apt-get -y install git curl wget python3.9 
     #nvidia-cuda-toolkit
 
@@ -26,10 +27,11 @@ RUN apt-get update && \
 
 ## Install PyTorch with dependencies
 RUN conda install --quiet --yes \
-    pyyaml mkl mkl-include setuptools cmake cffi typing && \
+    pytorch torchvision cudatoolkit=10.1 rdkit \
+    pyyaml mkl mkl-include setuptools cmake cffi typing pot && \
     conda clean --all -f -y && \
-    fix-permissions $CONDA_DIR && \
-    fix-permissions /home/$NB_USER
+    fix-permissions $CONDA_DIR 
+    # && \    fix-permissions /home/$NB_USER
 
 # RUN sudo apt-get update && \
 #     sudo apt-get install -y libassuan0 libnpth0 libksba8 \
@@ -46,7 +48,10 @@ RUN pip install dgl-cu101 -f https://data.dgl.ai/wheels/repo.html
 
 ### RDKit
 RUN sudo apt-get update && \
-    sudo apt-get install -y librdkit1 rdkit-data
+    sudo apt-get clean && \
+    sudo apt-get install -y librdkit1 && \
+    sudo apt-get clean && \
+    sudo apt-get install -y rdkit-data
     # python-rdkit
 
 ### Python Libraries
