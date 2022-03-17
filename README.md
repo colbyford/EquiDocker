@@ -22,6 +22,9 @@ docker run -v T:\equidock_tests:/data --name equidock --rm -p 8888:8888 equidock
 ### Inference Whole Directory
 ```sh
 inference_rigid.py
-intference_pair.py
 ```
-* _Will be updated for single protein pair docking..._
+
+### Inference Single Pair
+```sh
+inference_pair.py
+```
