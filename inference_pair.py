@@ -12,6 +12,7 @@ from src.utils.io import create_dir
 
 
 dataset = 'db5'
+# dataset = 'dips'
 method_name = 'equidock'
 
 
@@ -60,83 +61,78 @@ def main(args):
 
     time_list = []
 
-    input_dir = './test_sets_pdb/' + dataset + '_test_random_transformed/random_transformed/'
-    ground_truth_dir = './test_sets_pdb/' + dataset + '_test_random_transformed/complexes/'
+    input_dir = '/data' ## MOUNTED LOCATION
+    output_dir = '/data/results/'
+    #create_dir(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
-    output_dir = './test_sets_pdb/' + dataset + '_' + method_name + '_results/'
-    create_dir(output_dir)
+    ligand_filename = os.path.join(input_dir, 'your_ligand_input.pdb')
+    receptor_filename = os.path.join(input_dir, 'your_receptor_input.pdb')
+    out_filename = 'your_docked_output.pdb'
 
-    pdb_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f)) and f.endswith('.pdb')]
-    for file in pdb_files:
-        if not file.endswith('_l_b.pdb'):
-            continue
-        ll = len('_l_b.pdb')
-        ligand_filename = os.path.join(input_dir, file[:-ll] + '_l_b' + '.pdb')
-        receptor_filename = os.path.join(ground_truth_dir, file[:-ll] + '_r_b' + '_COMPLEX.pdb')
-        out_filename = file[:-ll] + '_l_b' + '_' + method_name.upper() + '.pdb'
-
-        print(' inference on file = ', ligand_filename)
+    print(' inference on file = ', ligand_filename)
 
 
-        start = dt.now()
+    start = dt.now()
 
-        ppdb_ligand = PandasPdb().read_pdb(ligand_filename)
+    ppdb_ligand = PandasPdb().read_pdb(ligand_filename)
 
-        unbound_ligand_all_atoms_pre_pos = ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']].to_numpy().squeeze().astype(np.float32)
+    unbound_ligand_all_atoms_pre_pos = ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']].to_numpy().squeeze().astype(np.float32)
 
 
 
-        unbound_predic_ligand, \
-        unbound_predic_receptor, \
-        bound_ligand_repres_nodes_loc_clean_array,\
-        bound_receptor_repres_nodes_loc_clean_array = preprocess_unbound_bound(
-            get_residues(ligand_filename), get_residues(receptor_filename),
-            graph_nodes=args['graph_nodes'], pos_cutoff=args['pocket_cutoff'], inference=True)
+    unbound_predic_ligand, \
+    unbound_predic_receptor, \
+    bound_ligand_repres_nodes_loc_clean_array,\
+    bound_receptor_repres_nodes_loc_clean_array = preprocess_unbound_bound(
+        get_residues(ligand_filename), get_residues(receptor_filename),
+        graph_nodes=args['graph_nodes'], pos_cutoff=args['pocket_cutoff'], inference=True)
 
 
-        ligand_graph, receptor_graph = protein_to_graph_unbound_bound(unbound_predic_ligand,
-                                                                      unbound_predic_receptor,
-                                                                      bound_ligand_repres_nodes_loc_clean_array,
-                                                                      bound_receptor_repres_nodes_loc_clean_array,
-                                                                      graph_nodes=args['graph_nodes'],
-                                                                      cutoff=args['graph_cutoff'],
-                                                                      max_neighbor=args['graph_max_neighbor'],
-                                                                      one_hot=False,
-                                                                      residue_loc_is_alphaC=args['graph_residue_loc_is_alphaC']
-                                                                      )
-
-        if args['input_edge_feats_dim'] < 0:
-            args['input_edge_feats_dim'] = ligand_graph.edata['he'].shape[1]
+    ligand_graph, receptor_graph = protein_to_graph_unbound_bound(unbound_predic_ligand,
+                                                                  unbound_predic_receptor,
+                                                                  bound_ligand_repres_nodes_loc_clean_array,
+                                                                  bound_receptor_repres_nodes_loc_clean_array,
+                                                                  graph_nodes=args['graph_nodes'],
+                                                                  cutoff=args['graph_cutoff'],
+                                                                  max_neighbor=args['graph_max_neighbor'],
+                                                                  one_hot=False,
+                                                                  residue_loc_is_alphaC=args['graph_residue_loc_is_alphaC']
+                                                                  )
 
 
-        ligand_graph.ndata['new_x'] = ligand_graph.ndata['x']
-
-        assert np.linalg.norm(bound_ligand_repres_nodes_loc_clean_array - ligand_graph.ndata['x'].detach().cpu().numpy()) < 1e-1
-
-        # Create a batch of a single DGL graph
-        batch_hetero_graph = batchify_and_create_hetero_graphs_inference(ligand_graph, receptor_graph)
-
-        with torch.no_grad():
-            batch_hetero_graph = batch_hetero_graph.to(args['device'])
-            model_ligand_coors_deform_list, \
-            model_keypts_ligand_list, model_keypts_receptor_list, \
-            all_rotation_list, all_translation_list = model(batch_hetero_graph, epoch=0)
+    if args['input_edge_feats_dim'] < 0:
+        args['input_edge_feats_dim'] = ligand_graph.edata['he'].shape[1]
 
 
-            rotation = all_rotation_list[0].detach().cpu().numpy()
-            translation = all_translation_list[0].detach().cpu().numpy()
+    ligand_graph.ndata['new_x'] = ligand_graph.ndata['x']
 
-            new_residues = (rotation @ bound_ligand_repres_nodes_loc_clean_array.T).T+translation
-            assert np.linalg.norm(new_residues - model_ligand_coors_deform_list[0].detach().cpu().numpy()) < 1e-1
+    assert np.linalg.norm(bound_ligand_repres_nodes_loc_clean_array - ligand_graph.ndata['x'].detach().cpu().numpy()) < 1e-1
 
-            unbound_ligand_new_pos = (rotation @ unbound_ligand_all_atoms_pre_pos.T).T+translation
+    # Create a batch of a single DGL graph
+    batch_hetero_graph = batchify_and_create_hetero_graphs_inference(ligand_graph, receptor_graph)
 
-            ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']] = unbound_ligand_new_pos
-            unbound_ligand_save_filename = os.path.join(output_dir, out_filename)
-            ppdb_ligand.to_pdb(path=unbound_ligand_save_filename, records=['ATOM'], gz=False)
+    with torch.no_grad():
+        batch_hetero_graph = batch_hetero_graph.to(args['device'])
+        model_ligand_coors_deform_list, \
+        model_keypts_ligand_list, model_keypts_receptor_list, \
+        all_rotation_list, all_translation_list = model(batch_hetero_graph, epoch=0)
 
-        end = dt.now()
-        time_list.append((end-start).total_seconds())
+
+        rotation = all_rotation_list[0].detach().cpu().numpy()
+        translation = all_translation_list[0].detach().cpu().numpy()
+
+        new_residues = (rotation @ bound_ligand_repres_nodes_loc_clean_array.T).T+translation
+        assert np.linalg.norm(new_residues - model_ligand_coors_deform_list[0].detach().cpu().numpy()) < 1e-1
+
+        unbound_ligand_new_pos = (rotation @ unbound_ligand_all_atoms_pre_pos.T).T+translation
+
+        ppdb_ligand.df['ATOM'][['x_coord', 'y_coord', 'z_coord']] = unbound_ligand_new_pos
+        unbound_ligand_save_filename = os.path.join(output_dir, out_filename)
+        ppdb_ligand.to_pdb(path=unbound_ligand_save_filename, records=['ATOM'], gz=False)
+
+    end = dt.now()
+    time_list.append((end-start).total_seconds())
 
     time_array = np.array(time_list)
     log(f"Mean runtime: {np.mean(time_array)}, std runtime: {np.std(time_array)}")
