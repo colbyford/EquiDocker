@@ -62,4 +62,8 @@ RUN pip install -r requirements.txt
 RUN git clone https://github.com/octavian-ganea/equidock_public 
     #&& \ git checkout f0059041d8d3af88a9d120e9e5c36d3bedfb32a8
 
+COPY ./inference_pair.py ./equidock_public 
+COPY ./inference_pair_noclashes.py ./equidock_public 
+
 RUN sudo chmod -R 777 ./equidock_public 
+

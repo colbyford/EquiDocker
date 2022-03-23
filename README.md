@@ -27,4 +27,7 @@ inference_rigid.py
 ### Inference Single Pair
 ```sh
 inference_pair.py
+
+## If having issues with steric clashes
+inference_pair_noclashes.py
 ```
