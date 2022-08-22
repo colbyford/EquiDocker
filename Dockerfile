@@ -1,7 +1,7 @@
 FROM jupyter/scipy-notebook:latest
 # FROM cschranz/gpu-jupyter
 
-LABEL org.opencontainers.image.authors="Tuple, LLC <contact@tuple.xyz>"
+LABEL author="Tuple, LLC <contact@tuple.xyz>"
 
 ## Environment Settings
 ENV DEBIAN_FRONTEND=noninteractive \
